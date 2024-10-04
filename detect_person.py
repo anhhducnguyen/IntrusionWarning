@@ -12,7 +12,7 @@ GPIO.setmode(GPIO.BCM)
 
 # Danh sách các GPIO
 GPIONames = [14, 15, 18, 23, 24, 25, 8, 7]  # Thay đổi theo chân bạn đang sử dụng
-q
+
 # Thiết lập chân GPIO
 for pin in GPIONames:
     GPIO.setup(pin, GPIO.OUT)
