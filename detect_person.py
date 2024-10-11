@@ -5,7 +5,7 @@ import tkinter as tk
 import time
 from datetime import datetime
 from EmulatorGUI import GPIO
-import winsound 
+import winsound  # Phát âm thanh trên Windows, sử dụng thư viện khác cho Linux/MacOS
 from pnhLCD1602 import LCD1602
 
 # Khởi tạo GPIO
@@ -17,6 +17,12 @@ GPIONames = [14, 15, 18, 23, 24, 25, 8, 7]  # Thay đổi theo chân bạn đang
 # Thiết lập chân GPIO
 for pin in GPIONames:
     GPIO.setup(pin, GPIO.OUT)
+
+# Khởi tạo LCD
+lcd = LCD1602()  # Bỏ phương thức init()
+
+# Biến đếm số người phát hiện được
+person_count = 0
 
 # Tạo đối tượng YOLO
 model = YOLO("yolov8n.pt")  # Chọn phiên bản YOLO thích hợp
@@ -34,7 +40,7 @@ def alert_person_detected():
         # Kiểm tra thời gian hiện tại
         current_time = datetime.now().time()
         start_time = datetime.strptime("10:00:00", "%H:%M:%S").time()
-        end_time = datetime.strptime("15:00:00", "%H:%M:%S").time()
+        end_time = datetime.strptime("16:00:00", "%H:%M:%S").time()
 
         # Chỉ bật LED và phát âm thanh nếu trong khoảng từ 10 giờ đến 15 giờ
         if start_time <= current_time <= end_time:
@@ -76,6 +82,12 @@ class LEDController(threading.Thread):
         GPIO.cleanup()
         self.root.destroy()
 
+# Hàm cập nhật số lượng người trên màn hình LCD
+def update_lcd_count(count):
+    lcd.clear()  # Xóa màn hình LCD
+    lcd.set_cursor(0, 0)  # Đặt con trỏ ở dòng 0, cột 0
+    lcd.print("So nguoi: " + str(count))  # In số lượng người lên LCD
+
 # Khởi tạo luồng điều khiển LED và GUI
 app = LEDController()
 
@@ -102,9 +114,11 @@ while True:
                 x1, y1, x2, y2 = map(int, box.xyxy[0])
                 cv2.rectangle(frame_resized, (x1, y1), (x2, y2), (0, 255, 0), 2)
     
-    # Nếu phát hiện người, gọi hàm thông báo
+    # Nếu phát hiện người, gọi hàm thông báo và tăng biến đếm
     if person_detected:
+        person_count += 1
         alert_person_detected()
+        update_lcd_count(person_count)  # Cập nhật số lượng người trên LCD
     
     # Cập nhật trạng thái vào giao diện GUI
     app.update_status(person_detected)

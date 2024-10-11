@@ -34,6 +34,12 @@ class LCD1602:
             self.lines[1] = text[:16]  # Ghi vào dòng thứ hai nếu dòng đầu đã có nội dung
         self.display()
 
+    def print(self, text):
+        """Phương thức in văn bản lên LCD"""
+        self.clear()  # Xóa màn hình trước khi in
+        self.set_cursor(0, 0)  # Đặt con trỏ về vị trí bắt đầu
+        self.write_string(text)  # Ghi chuỗi lên LCD
+
     def write_char(self, char):
         row, col = self.cursor_position
         if col < 16:
