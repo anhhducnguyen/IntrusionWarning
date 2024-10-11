@@ -3,9 +3,10 @@ from ultralytics import YOLO
 import threading
 import tkinter as tk
 import time
-from datetime import datetime  # Import thêm để kiểm tra thời gian
+from datetime import datetime
 from EmulatorGUI import GPIO
-import winsound  # For beep sound on Windows, use other libraries for Linux/MacOS
+import winsound 
+from pnhLCD1602 import LCD1602
 
 # Khởi tạo GPIO
 GPIO.setmode(GPIO.BCM)
@@ -27,19 +28,23 @@ if not cap.isOpened():
     print("Không thể truy cập camera.")
     exit()
 
-# Hàm điều khiển LED và phát âm thanh khi phát hiện người trong khoảng thời gian nhất định
+# Hàm điều khiển LED và phát âm thanh, đưa vào luồng riêng
 def alert_person_detected():
-    # Kiểm tra thời gian hiện tại
-    current_time = datetime.now().time()
-    start_time = datetime.strptime("10:00:00", "%H:%M:%S").time()
-    end_time = datetime.strptime("13:11:00", "%H:%M:%S").time()
+    def alert():
+        # Kiểm tra thời gian hiện tại
+        current_time = datetime.now().time()
+        start_time = datetime.strptime("10:00:00", "%H:%M:%S").time()
+        end_time = datetime.strptime("15:00:00", "%H:%M:%S").time()
+
+        # Chỉ bật LED và phát âm thanh nếu trong khoảng từ 10 giờ đến 15 giờ
+        if start_time <= current_time <= end_time:
+            GPIO.output(GPIONames[0], GPIO.HIGH)  # Bật đèn LED ở chân GPIO 14
+            winsound.Beep(1000, 500)  # Phát âm thanh tần số 1000 Hz trong 500 ms (Chỉ trên Windows)
+            time.sleep(0.5)
+            GPIO.output(GPIONames[0], GPIO.LOW)  # Tắt đèn LED
     
-    # Chỉ bật LED và phát âm thanh nếu trong khoảng từ 8 giờ đến 10 giờ
-    if start_time <= current_time <= end_time:
-        GPIO.output(GPIONames[0], GPIO.HIGH)  # Bật đèn LED ở chân GPIO 14
-        winsound.Beep(1000, 500)  # Phát âm thanh tần số 1000 Hz trong 500 ms (Chỉ trên Windows)
-        time.sleep(0.5)
-        GPIO.output(GPIONames[0], GPIO.LOW)  # Tắt đèn LED
+    # Khởi chạy tác vụ trong một luồng mới để không chặn vòng lặp chính
+    threading.Thread(target=alert).start()
 
 # Class điều khiển giao diện LED và hiển thị trạng thái phát hiện người
 class LEDController(threading.Thread):
@@ -97,7 +102,7 @@ while True:
                 x1, y1, x2, y2 = map(int, box.xyxy[0])
                 cv2.rectangle(frame_resized, (x1, y1), (x2, y2), (0, 255, 0), 2)
     
-    # Nếu phát hiện người, gọi hàm thông báo liên tục
+    # Nếu phát hiện người, gọi hàm thông báo
     if person_detected:
         alert_person_detected()
     
