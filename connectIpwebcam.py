@@ -9,7 +9,7 @@ video_path = "/video"          # Thay đổi nếu cần thiết
 ip_camera_url = f"http://{ip_address}:{port}{video_path}"
 
 # Mở kết nối đến camera IP
-cap = cv2.VideoCapture(ip_camera_url)
+cap = cv2.VideoCapture(0)
 
 if not cap.isOpened():
     print("Không thể mở camera IP")
