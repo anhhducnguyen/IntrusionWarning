@@ -21,9 +21,6 @@ for pin in GPIONames:
 # Khởi tạo LCD
 lcd = LCD1602()  # Bỏ phương thức init()
 
-# Biến đếm số người phát hiện được
-person_count = 0
-
 # Tạo đối tượng YOLO
 model = YOLO("yolov8n.pt")  # Chọn phiên bản YOLO thích hợp
 
@@ -88,8 +85,18 @@ def update_lcd_count(count):
     lcd.set_cursor(0, 0)  # Đặt con trỏ ở dòng 0, cột 0
     lcd.print("So nguoi: " + str(count))  # In số lượng người lên LCD
 
+# Hàm kiểm tra kích thước hộp bao (bounding box)
+def is_person_box_valid(x1, y1, x2, y2):
+    # Kiểm tra kích thước hộp bao có lớn hơn ngưỡng tối thiểu không (ví dụ: 50 pixel)
+    width = x2 - x1
+    height = y2 - y1
+    return width > 50 and height > 100  # Điều chỉnh ngưỡng phù hợp với kích thước thực tế
+
 # Khởi tạo luồng điều khiển LED và GUI
 app = LEDController()
+
+# Lưu trữ vị trí đối tượng qua các khung hình để kiểm tra chuyển động
+previous_positions = {}
 
 while True:
     # Đọc từng khung hình từ camera
@@ -105,23 +112,41 @@ while True:
     # Dò tìm người trong khung hình
     results = model(frame_resized)
 
-    # Kiểm tra xem có phát hiện người không
-    person_detected = False
+    # Đếm số lượng người phát hiện được trong khung hình
+    person_count_in_frame = 0
     for r in results:
         for box in r.boxes:
             if int(box.cls[0]) == 0:  # Lớp '0' là người
-                person_detected = True
                 x1, y1, x2, y2 = map(int, box.xyxy[0])
-                cv2.rectangle(frame_resized, (x1, y1), (x2, y2), (0, 255, 0), 2)
+
+                # Kiểm tra điều kiện kích thước hộp bao để loại bỏ đối tượng quá nhỏ
+                if is_person_box_valid(x1, y1, x2, y2):
+                    # Tính toán trung tâm của hộp bao để theo dõi vị trí
+                    center_x = (x1 + x2) // 2
+                    center_y = (y1 + y2) // 2
+                    person_id = f"{center_x}_{center_y}"
+
+                    # Kiểm tra sự di chuyển của đối tượng qua các khung hình
+                    if person_id in previous_positions:
+                        prev_x, prev_y = previous_positions[person_id]
+                        movement = abs(center_x - prev_x) + abs(center_y - prev_y)
+                        if movement < 20:  # Nếu đối tượng không di chuyển nhiều, bỏ qua
+                            continue
+                    
+                    # Cập nhật vị trí hiện tại
+                    previous_positions[person_id] = (center_x, center_y)
+
+                    # Nếu đối tượng đạt yêu cầu, vẽ hình chữ nhật và tăng biến đếm
+                    person_count_in_frame += 1
+                    cv2.rectangle(frame_resized, (x1, y1), (x2, y2), (0, 255, 0), 2)
     
-    # Nếu phát hiện người, gọi hàm thông báo và tăng biến đếm
-    if person_detected:
-        person_count += 1
+    # Nếu phát hiện người, gọi hàm thông báo
+    if person_count_in_frame > 0:
         alert_person_detected()
-        update_lcd_count(person_count)  # Cập nhật số lượng người trên LCD
-    
-    # Cập nhật trạng thái vào giao diện GUI
-    app.update_status(person_detected)
+
+    # Cập nhật số người hiện tại trên LCD và GUI
+    update_lcd_count(person_count_in_frame)  # Cập nhật số lượng người trên LCD
+    app.update_status(person_count_in_frame > 0)  # Cập nhật trạng thái phát hiện người trong GUI
 
     # Hiển thị khung hình đã xử lý
     cv2.imshow('People Detection with YOLOv8', frame_resized)
