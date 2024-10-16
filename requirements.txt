@@ -1,2 +1,2 @@
 ultralytics==8.3.10
-cv2
+opencv-python==4.10.0.84
