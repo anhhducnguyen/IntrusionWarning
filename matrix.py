@@ -1,7 +1,7 @@
 import tkinter as tk
 from EmulatorGUI import GPIO  # Import GPIO giả lập
 import time
-from pnhLCD1602 import LCD1602  # Sử dụng LCD đã có sẵn
+from GPIO.pnhLCD1602 import LCD1602  # Sử dụng LCD đã có sẵn
 
 # Khởi tạo GPIO
 GPIO.setmode(GPIO.BCM)

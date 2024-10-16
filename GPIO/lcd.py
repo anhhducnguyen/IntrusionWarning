@@ -1,5 +1,5 @@
 import time
-from pnhLCD1602 import LCD1602  # For LCD display simulation
+from GPIO.pnhLCD1602 import LCD1602  # For LCD display simulation
 
 lcd = LCD1602()
 
