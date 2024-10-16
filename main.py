@@ -4,6 +4,7 @@ from ultralytics import YOLO
 import threading
 import time
 from datetime import datetime
+from lcd import display_lcd_warning
 from pnhLCD1602 import LCD1602
 from EmulatorGUI import GPIO  # Thư viện GPIO cho Raspberry Pi hoặc mô phỏng
 
@@ -42,19 +43,7 @@ def alert_person_detected():
     time.sleep(0.5)
     GPIO.output(LED_PIN, GPIO.LOW)  # Tắt LED
 
-# Hàm cập nhật LCD
-def display_lcd_warning(person_detected):
-    lcd.clear()
-    if person_detected:
-        lcd.write_string("Canh bao!")
-        lcd.set_cursor(1, 0)
-        lcd.write_string("Co nguoi xuat hien")
-    else:
-        lcd.write_string("Khong co nguoi")
-        lcd.set_cursor(1, 0)
-        lcd.write_string("nao xuat hien")
-    time.sleep(1)  # Thời gian hiển thị ngắn hơn để tăng tốc
-    lcd.clear()
+
 
 # Biến lưu thời gian ghi video cuối cùng
 last_record_time = 0
