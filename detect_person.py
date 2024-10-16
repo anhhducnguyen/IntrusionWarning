@@ -7,6 +7,7 @@ from datetime import datetime
 from EmulatorGUI import GPIO
 import winsound  # Phát âm thanh trên Windows, sử dụng thư viện khác cho Linux/MacOS
 from pnhLCD1602 import LCD1602
+from log_csv import log_person_data  # Import hàm ghi dữ liệu vào CSV
 
 # Khởi tạo GPIO
 GPIO.setmode(GPIO.BCM)
@@ -39,13 +40,13 @@ def alert_person_detected():
         start_time = datetime.strptime("10:00:00", "%H:%M:%S").time()
         end_time = datetime.strptime("16:00:00", "%H:%M:%S").time()
 
-        # Chỉ bật LED và phát âm thanh nếu trong khoảng từ 10 giờ đến 15 giờ
+        # Chỉ bật LED và phát âm thanh nếu trong khoảng từ 10 giờ đến 16 giờ
         if start_time <= current_time <= end_time:
             GPIO.output(GPIONames[0], GPIO.HIGH)  # Bật đèn LED ở chân GPIO 14
             winsound.Beep(1000, 500)  # Phát âm thanh tần số 1000 Hz trong 500 ms (Chỉ trên Windows)
             time.sleep(0.5)
             GPIO.output(GPIONames[0], GPIO.LOW)  # Tắt đèn LED
-    
+
     # Khởi chạy tác vụ trong một luồng mới để không chặn vòng lặp chính
     threading.Thread(target=alert).start()
 
@@ -139,10 +140,12 @@ while True:
                     # Nếu đối tượng đạt yêu cầu, vẽ hình chữ nhật và tăng biến đếm
                     person_count_in_frame += 1
                     cv2.rectangle(frame_resized, (x1, y1), (x2, y2), (0, 255, 0), 2)
-    
     # Nếu phát hiện người, gọi hàm thông báo
     if person_count_in_frame > 0:
         alert_person_detected()
+
+    # Ghi số lượng người vào file CSV
+    log_person_data(person_count_in_frame)  # Ghi số lượng người vào CSV
 
     # Cập nhật số người hiện tại trên LCD và GUI
     update_lcd_count(person_count_in_frame)  # Cập nhật số lượng người trên LCD
