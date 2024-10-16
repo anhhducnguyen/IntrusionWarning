@@ -4,9 +4,9 @@ from ultralytics import YOLO
 import threading
 import time
 from datetime import datetime
-from lcd import display_lcd_warning
-from pnhLCD1602 import LCD1602
-from EmulatorGUI import GPIO  # Thư viện GPIO cho Raspberry Pi hoặc mô phỏng
+from GPIO.lcd import display_lcd_warning
+from GPIO.pnhLCD1602 import LCD1602
+from GPIO.EmulatorGUI import GPIO  # Thư viện GPIO cho Raspberry Pi hoặc mô phỏng
 
 # Tạo thư mục "videos" nếu chưa tồn tại
 video_folder = "videos"

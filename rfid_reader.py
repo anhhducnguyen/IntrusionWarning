@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox
-from EmulatorGUI import GPIO  # Thư viện GPIO cho Raspberry Pi hoặc mô phỏng
-from pnhLCD1602 import LCD1602
+from GPIO.EmulatorGUI import GPIO  # Thư viện GPIO cho Raspberry Pi hoặc mô phỏng
+from GPIO.pnhLCD1602 import LCD1602
 import time
 
 # Khởi tạo GPIO

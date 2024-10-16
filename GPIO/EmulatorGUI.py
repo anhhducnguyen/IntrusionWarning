@@ -1,6 +1,6 @@
 from tkinter import *
 import tkinter as tk
-from PIN import PIN
+from GPIO.PIN import PIN
 from TypeChecker import typeassert
 import threading
 import time
