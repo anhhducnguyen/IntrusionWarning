@@ -4,9 +4,9 @@ import threading
 import tkinter as tk
 import time
 from datetime import datetime
-from EmulatorGUI import GPIO
+from GPIO.EmulatorGUI import GPIO
 import winsound  # Phát âm thanh trên Windows, sử dụng thư viện khác cho Linux/MacOS
-from pnhLCD1602 import LCD1602
+from GPIO.pnhLCD1602 import LCD1602
 from log_csv import log_person_data  # Import hàm ghi dữ liệu vào CSV
 
 # Khởi tạo GPIO
