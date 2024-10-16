@@ -5,9 +5,9 @@ lcd = LCD1602()
 
 def display_lcd(text_line1, text_line2):
     lcd.clear()
-    lcd.set_cursor(0, 0)
+    lcd.set_cursor(0, 4)
     lcd.write_string(text_line1)
-    lcd.set_cursor(1, 0)
+    lcd.set_cursor(1,4)
     lcd.write_string(text_line2)
     
     time.sleep(2)  # Giữ màn hình hiển thị trong 2 giây
