@@ -7,7 +7,7 @@ from datetime import datetime
 from EmulatorGUI import GPIO
 import winsound  # Phát âm thanh trên Windows, sử dụng thư viện khác cho Linux/MacOS
 from pnhLCD1602 import LCD1602
-
+from lcd import LCD1602
 # Khởi tạo GPIO
 GPIO.setmode(GPIO.BCM)
 
@@ -159,3 +159,6 @@ while True:
 cap.release()
 cv2.destroyAllWindows()
 GPIO.cleanup()
+
+
+
