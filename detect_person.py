@@ -6,6 +6,7 @@ import time
 from datetime import datetime
 from EmulatorGUI import GPIO
 import winsound  # Phát âm thanh trên Windows, sử dụng thư viện khác cho Linux/MacOS
+from lcd import display_lcd
 from pnhLCD1602 import LCD1602
 from log_csv import log_person_data  # Import hàm ghi dữ liệu vào CSV
 
@@ -82,9 +83,8 @@ class LEDController(threading.Thread):
 
 # Hàm cập nhật số lượng người trên màn hình LCD
 def update_lcd_count(count):
-    lcd.clear()  # Xóa màn hình LCD
-    lcd.set_cursor(0, 0)  # Đặt con trỏ ở dòng 0, cột 0
-    lcd.print("So nguoi: " + str(count))  # In số lượng người lên LCD
+    display_lcd("So nguoi: "+ str(count), "WRANING")
+    
 
 # Hàm kiểm tra kích thước hộp bao (bounding box)
 def is_person_box_valid(x1, y1, x2, y2):
