@@ -1,12 +1,11 @@
+import os
 import cv2
 from ultralytics import YOLO
 import threading
-import tkinter as tk
 import time
 from datetime import datetime
 from GPIO.EmulatorGUI import GPIO
 import winsound  # Phát âm thanh trên Windows, sử dụng thư viện khác cho Linux/MacOS
-from GPIO.lcd import display_lcd
 from GPIO.pnhLCD1602 import LCD1602
 from log_csv import log_person_data  # Import hàm ghi dữ liệu vào CSV
 
@@ -21,17 +20,24 @@ for pin in GPIONames:
     GPIO.setup(pin, GPIO.OUT)
 
 # Khởi tạo LCD
-lcd = LCD1602()  # Bỏ phương thức init()
+lcd = LCD1602()
 
 # Tạo đối tượng YOLO
 model = YOLO("yolov8n.pt")  # Chọn phiên bản YOLO thích hợp
 
+# Khởi tạo video capture
 cap = cv2.VideoCapture(0)
 
 # Kiểm tra nếu camera mở thành công
 if not cap.isOpened():
     print("Không thể truy cập camera.")
     exit()
+
+# Tạo VideoWriter để lưu video với timestamp
+timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+output_video_path = os.path.join("videos", f'output_{timestamp}.avi')
+fourcc = cv2.VideoWriter_fourcc(*'XVID')
+out = cv2.VideoWriter(output_video_path, fourcc, 20.0, (640, 480))
 
 # Hàm điều khiển LED và phát âm thanh, đưa vào luồng riêng
 def alert_person_detected():
@@ -51,40 +57,20 @@ def alert_person_detected():
     # Khởi chạy tác vụ trong một luồng mới để không chặn vòng lặp chính
     threading.Thread(target=alert).start()
 
-# Class điều khiển giao diện LED và hiển thị trạng thái phát hiện người
-class LEDController(threading.Thread):
-    def __init__(self):
-        threading.Thread.__init__(self)
-        self.person_detected = False
-        self.start()
+# Hàm cập nhật số lượng người và cảnh báo trên màn hình LCD
+def update_lcd_count_and_alert(count):
+    if count > 0:
+        display_lcd(f"So nguoi: {count}", "Canh bao: Co nguoi!")
+    else:
+        display_lcd("So nguoi: 0", "Khong co nguoi")
 
-    def run(self):
-        self.root = tk.Tk()
-        self.root.wm_title("Camera giám sát an ninh")
-
-        # Label để hiển thị trạng thái phát hiện người
-        self.status_label = tk.Label(self.root, text="Không phát hiện được người nào", font=("Arial", 18))
-        self.status_label.pack(pady=20)
-
-        self.root.protocol("WM_DELETE_WINDOW", self.on_close)
-        self.root.mainloop()
-
-    def update_status(self, detected):
-        # Cập nhật thông báo trên GUI
-        self.person_detected = detected
-        if detected:
-            self.status_label.config(text="Đã phát hiện người!", fg="green")
-        else:
-            self.status_label.config(text="Không phát hiện được người nào", fg="red")
-
-    def on_close(self):
-        GPIO.cleanup()
-        self.root.destroy()
-
-# Hàm cập nhật số lượng người trên màn hình LCD
-def update_lcd_count(count):
-    display_lcd("So nguoi: "+ str(count), "WRANING")
-    
+# Hàm hiển thị thông tin trên LCD
+def display_lcd(text_line1, text_line2):
+    lcd.clear()  # Xóa màn hình trước
+    lcd.set_cursor(0, 0)  # Vị trí dòng 1
+    lcd.write_string(text_line1)  # In dòng 1
+    lcd.set_cursor(1, 0)  # Vị trí dòng 2
+    lcd.write_string(text_line2)  # In dòng 2
 
 # Hàm kiểm tra kích thước hộp bao (bounding box)
 def is_person_box_valid(x1, y1, x2, y2):
@@ -93,11 +79,11 @@ def is_person_box_valid(x1, y1, x2, y2):
     height = y2 - y1
     return width > 50 and height > 100  # Điều chỉnh ngưỡng phù hợp với kích thước thực tế
 
-# Khởi tạo luồng điều khiển LED và GUI
-app = LEDController()
-
 # Lưu trữ vị trí đối tượng qua các khung hình để kiểm tra chuyển động
 previous_positions = {}
+
+# Biến lưu thời gian ghi video cuối cùng
+last_record_time = 0
 
 while True:
     # Đọc từng khung hình từ camera
@@ -139,17 +125,20 @@ while True:
 
                     # Nếu đối tượng đạt yêu cầu, vẽ hình chữ nhật và tăng biến đếm
                     person_count_in_frame += 1
-                    cv2.rectangle(frame_resized, (x1, y1), (x2, y2), (0, 255, 0), 2)
-    # Nếu phát hiện người, gọi hàm thông báo
-    if person_count_in_frame > 0:
-        alert_person_detected()
+                    cv2.rectangle(frame_resized, (x1, y1), (x2, y2), (0, 255, 0), 2)  # Vẽ hình chữ nhật xung quanh người
+
+    # Nếu phát hiện người, gọi hàm thông báo và lưu video
+    current_time = time.time()
+    if person_count_in_frame > 0 and current_time - last_record_time >= 1:
+        alert_person_detected()  # Kích hoạt cảnh báo
+        out.write(frame_resized)  # Ghi khung hình vào video
+        last_record_time = current_time  # Cập nhật thời gian ghi cuối cùng
 
     # Ghi số lượng người vào file CSV
     log_person_data(person_count_in_frame)  # Ghi số lượng người vào CSV
 
-    # Cập nhật số người hiện tại trên LCD và GUI
-    update_lcd_count(person_count_in_frame)  # Cập nhật số lượng người trên LCD
-    app.update_status(person_count_in_frame > 0)  # Cập nhật trạng thái phát hiện người trong GUI
+    # Cập nhật số người hiện tại trên LCD
+    update_lcd_count_and_alert(person_count_in_frame)  # Cập nhật số lượng người và cảnh báo trên LCD
 
     # Hiển thị khung hình đã xử lý
     cv2.imshow('People Detection with YOLOv8', frame_resized)
@@ -160,8 +149,6 @@ while True:
 
 # Giải phóng tài nguyên
 cap.release()
+out.release()
 cv2.destroyAllWindows()
 GPIO.cleanup()
-
-
-
