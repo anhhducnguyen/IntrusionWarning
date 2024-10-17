@@ -4,10 +4,12 @@ import threading
 import tkinter as tk
 import time
 from datetime import datetime
-from EmulatorGUI import GPIO
+import os  # Thêm dòng nhập khẩu os
+import csv  # Thêm dòng nhập khẩu csv
 import winsound  # Phát âm thanh trên Windows, sử dụng thư viện khác cho Linux/MacOS
+from EmulatorGUI import GPIO
 from pnhLCD1602 import LCD1602
-from log_csv import log_person_data  # Import hàm ghi dữ liệu vào CSV
+from email_service import send_email  # Import hàm gửi email từ file email_service
 
 # Khởi tạo GPIO
 GPIO.setmode(GPIO.BCM)
@@ -32,8 +34,17 @@ if not cap.isOpened():
     print("Không thể truy cập camera.")
     exit()
 
+# Biến để theo dõi trạng thái gửi email
+email_sent = False
+
+# Hàm gửi email cảnh báo khi phát hiện người xuất hiện liên tục trong 5 giây
+def alert_person_exceeded_time():
+    subject = "Cảnh báo: Người xuất hiện quá 5 giây"
+    message = "Hệ thống đã phát hiện có người xuất hiện trong phạm vi camera quá 5 giây. Vui lòng kiểm tra ngay!"
+    send_email(subject, message)
+
 # Hàm điều khiển LED và phát âm thanh, đưa vào luồng riêng
-def alert_person_detected():
+def alert_led_and_sound():
     def alert():
         # Kiểm tra thời gian hiện tại
         current_time = datetime.now().time()
@@ -93,11 +104,33 @@ def is_person_box_valid(x1, y1, x2, y2):
     height = y2 - y1
     return width > 50 and height > 100  # Điều chỉnh ngưỡng phù hợp với kích thước thực tế
 
+# Hàm tạo file CSV nếu chưa tồn tại và ghi tiêu đề cột
+def create_csv_file_if_not_exists():
+    if not os.path.exists('people_detection_log.csv'):
+        with open('people_detection_log.csv', mode='w', newline='') as file:
+            writer = csv.writer(file)
+
+# Hàm ghi thông tin vào file .csv
+def log_person_data(person_count):
+    with open('people_detection_log.csv', mode='a', newline='') as file:
+        writer = csv.writer(file)
+        current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        writer.writerow([current_time, person_count])
+        print(f"Ghi vào file CSV: Thời gian: {current_time}, Số người: {person_count}")
+
 # Khởi tạo luồng điều khiển LED và GUI
 app = LEDController()
 
 # Lưu trữ vị trí đối tượng qua các khung hình để kiểm tra chuyển động
 previous_positions = {}
+person_start_time = None  # Biến lưu thời gian bắt đầu phát hiện người
+person_detected_duration = 0  # Biến lưu thời gian đối tượng xuất hiện liên tục
+
+# Gọi hàm tạo file CSV nếu chưa tồn tại
+create_csv_file_if_not_exists()
+
+# Biến để lưu trữ thời gian ghi vào file CSV
+last_log_time = time.time()
 
 while True:
     # Đọc từng khung hình từ camera
@@ -141,12 +174,29 @@ while True:
                     person_count_in_frame += 1
                     cv2.rectangle(frame_resized, (x1, y1), (x2, y2), (0, 255, 0), 2)
 
-    # Nếu phát hiện người, gọi hàm thông báo
+    # Nếu phát hiện người, gọi hàm thông báo và tính thời gian đối tượng xuất hiện
     if person_count_in_frame > 0:
-        alert_person_detected()
+        if person_start_time is None:
+            person_start_time = time.time()  # Lưu thời gian bắt đầu phát hiện người
+        else:
+            person_detected_duration = time.time() - person_start_time
+            
+            # Gửi email nếu đối tượng xuất hiện liên tục quá 
+            if person_detected_duration > 1 and not email_sent: 
+                alert_person_exceeded_time()  # Gửi email
+                email_sent = True  # Đánh dấu đã gửi email
 
-    # Ghi số lượng người vào file CSV
-    log_person_data(person_count_in_frame)  # Ghi số lượng người vào CSV
+        alert_led_and_sound()  # Bật LED và âm thanh cảnh báo
+
+    else:
+        person_start_time = None  # Reset thời gian nếu không phát hiện người
+        email_sent = False  # Reset trạng thái gửi email nếu không có người
+
+    # Ghi số lượng người vào file CSV mỗi giây
+    current_time = time.time()
+    if current_time - last_log_time >= 1:  # Ghi mỗi giây
+        log_person_data(person_count_in_frame)  # Ghi số lượng người vào CSV
+        last_log_time = current_time  # Cập nhật thời gian ghi
 
     # Cập nhật số người hiện tại trên LCD và GUI
     update_lcd_count(person_count_in_frame)  # Cập nhật số lượng người trên LCD
