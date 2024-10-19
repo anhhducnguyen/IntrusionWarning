@@ -34,3 +34,5 @@ def send_email(subject, message):
         print(f"Email đã được gửi tới {email_receiver}")
     except Exception as e:
         print(f"Không thể gửi email. Lỗi: {str(e)}")
+
+
