@@ -4,12 +4,11 @@ import threading
 import tkinter as tk
 import time
 from datetime import datetime
-import os  # Thêm dòng nhập khẩu os
-import csv  # Thêm dòng nhập khẩu csv
-import winsound  # Phát âm thanh trên Windows, sử dụng thư viện khác cho Linux/MacOS
+import winsound
 from EmulatorGUI import GPIO
 from pnhLCD1602 import LCD1602
-from email_service import send_email  # Import hàm gửi email từ file email_service
+from email_service import send_email
+from csv_logger import create_csv_file_if_not_exists, log_person_data  # Import các hàm CSV
 
 # Khởi tạo GPIO
 GPIO.setmode(GPIO.BCM)
@@ -27,6 +26,7 @@ lcd = LCD1602()  # Bỏ phương thức init()
 # Tạo đối tượng YOLO
 model = YOLO("yolov8n.pt")  # Chọn phiên bản YOLO thích hợp
 
+# Mở camera
 cap = cv2.VideoCapture(0)
 
 # Kiểm tra nếu camera mở thành công
@@ -104,20 +104,6 @@ def is_person_box_valid(x1, y1, x2, y2):
     height = y2 - y1
     return width > 50 and height > 100  # Điều chỉnh ngưỡng phù hợp với kích thước thực tế
 
-# Hàm tạo file CSV nếu chưa tồn tại và ghi tiêu đề cột
-def create_csv_file_if_not_exists():
-    if not os.path.exists('people_detection_log.csv'):
-        with open('people_detection_log.csv', mode='w', newline='') as file:
-            writer = csv.writer(file)
-
-# Hàm ghi thông tin vào file .csv
-def log_person_data(person_count):
-    with open('people_detection_log.csv', mode='a', newline='') as file:
-        writer = csv.writer(file)
-        current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        writer.writerow([current_time, person_count])
-        print(f"Ghi vào file CSV: Thời gian: {current_time}, Số người: {person_count}")
-
 # Khởi tạo luồng điều khiển LED và GUI
 app = LEDController()
 
@@ -181,7 +167,7 @@ while True:
         else:
             person_detected_duration = time.time() - person_start_time
             
-            # Gửi email nếu đối tượng xuất hiện liên tục quá 
+            # Gửi email nếu đối tượng xuất hiện liên tục quá 5 giây
             if person_detected_duration > 1 and not email_sent: 
                 alert_person_exceeded_time()  # Gửi email
                 email_sent = True  # Đánh dấu đã gửi email

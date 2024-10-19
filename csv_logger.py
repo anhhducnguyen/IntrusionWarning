@@ -11,8 +11,8 @@ def create_csv_file_if_not_exists():
     # Luôn tạo lại file mới để đảm bảo tiêu đề cột
     with open('people_detection_log.csv', mode='w', newline='') as file:
         writer = csv.writer(file)
-        # Ghi tiêu đề cột với khoảng cách
-        writer.writerow(['Date      ', 'Time    ', 'Person Count'])  # Thêm khoảng trắng vào tên cột
+        # Ghi tiêu đề cột
+        writer.writerow(['Date      ', 'Time    ', 'Person Count'])  
 
 # Hàm ghi thông tin vào file .csv
 def log_person_data(person_count):
