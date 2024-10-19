@@ -33,3 +33,4 @@ def log_person_data(person_count):
 # Gọi hàm tạo file CSV và ghi tiêu đề cột
 create_csv_file_if_not_exists()
 
+
