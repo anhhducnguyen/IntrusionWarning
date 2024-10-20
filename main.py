@@ -4,7 +4,7 @@ from ultralytics import YOLO
 import threading
 import time
 from datetime import datetime
-from GPIO.lcd import display_lcd_warning
+# from GPIO.lcd import display_lcd_warning
 from GPIO.pnhLCD1602 import LCD1602
 from GPIO.EmulatorGUI import GPIO  # Thư viện GPIO cho Raspberry Pi hoặc mô phỏng
 
@@ -76,7 +76,7 @@ while True:
         last_record_time = current_time  # Cập nhật thời gian ghi cuối cùng
 
     # Cập nhật thông tin trên LCD
-    display_lcd_warning(person_detected)
+    # display_lcd_warning(person_detected)
 
     # Hiển thị khung hình đã xử lý
     cv2.imshow('People Detection with YOLOv8', frame_resized)
