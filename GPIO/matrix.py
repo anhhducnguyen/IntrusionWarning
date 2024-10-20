@@ -30,7 +30,6 @@ class KeypadApp:
         # Khung để hiển thị phím nhấn
         self.display = tk.Entry(root, font=("Arial", 24), width=10, justify='center')
         self.display.grid(row=0, column=0, columnspan=4)
-
         # Ma trận bàn phím 4x4
         self.keys = [
             ['1', '2', '3', 'A'],

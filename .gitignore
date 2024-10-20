@@ -1,2 +1,3 @@
+__pycache__
+people_detection_log.csv
 .env
-videos/

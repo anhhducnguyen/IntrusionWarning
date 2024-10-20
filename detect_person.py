@@ -33,7 +33,7 @@ port = "8080"                  # Thay bằng port nếu cần (có thể là 808
 video_path = "/video"          # Thay đổi nếu cần thiết
 ip_camera_url = f"http://{ip_address}:{port}{video_path}"
 
-cap = cv2.VideoCapture(ip_camera_url)
+cap = cv2.VideoCapture(0)
 
 # Kiểm tra nếu camera mở thành công
 if not cap.isOpened():
