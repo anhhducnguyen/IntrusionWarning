@@ -12,7 +12,7 @@ from csv_logger import create_csv_file_if_not_exists, log_person_data  # Import 
 from GPIO.EmulatorGUI import GPIO
 import winsound  # Phát âm thanh trên Windows, sử dụng thư viện khác cho Linux/MacOS
 from GPIO.pnhLCD1602 import LCD1602
-from log_csv import log_person_data
+
 from main import alert_person_detected  # Import hàm ghi dữ liệu vào CSV
 
 

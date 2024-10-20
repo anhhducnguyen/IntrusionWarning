@@ -1,6 +1,6 @@
 import tkinter as tk
 import time
-from EmulatorGUI import GPIO  # Thay vì gpiozero
+from GPIO.EmulatorGUI import GPIO  # Thay vì gpiozero
 
 # Giả lập danh sách thẻ RFID đã biết
 known_tags = {
