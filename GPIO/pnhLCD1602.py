@@ -5,7 +5,7 @@
 import pygame
 
 class LCD1602:
-    def __init__(self, width=250, height=60, address=0x27):
+    def __init__(self, width=350, height=60, address=0x27):
         # Khởi tạo Pygame
         pygame.init()
         self.width = width
@@ -15,7 +15,7 @@ class LCD1602:
         pygame.display.set_caption("LCD1602")
         #self.font = pygame.font.SysFont("Arial", 24)
         self.font = pygame.font.Font(pygame.font.match_font('courier'), 24)
-        self.lines = ["", ""]  # 2 dòng
+        self.lines = ["", "",]  # 2 dòng
         self.backlight = True
         self.cursor_visible = False
         self.cursor_position = (0, 0)
@@ -29,9 +29,9 @@ class LCD1602:
     def write_string(self, text):
         # Ghi chuỗi vào dòng đầu tiên nếu còn trống, còn không thì vào dòng thứ hai.
         if self.lines[0] == "":
-            self.lines[0] = text[:16]  # Chỉ ghi tối đa 16 ký tự
+            self.lines[0] = text[:20]  # Chỉ ghi tối đa 16 ký tự
         elif self.lines[1] == "":
-            self.lines[1] = text[:16]  # Ghi vào dòng thứ hai nếu dòng đầu đã có nội dung
+            self.lines[1] = text[:20]  # Ghi vào dòng thứ hai nếu dòng đầu đã có nội dung
         self.display()
 
     def print(self, text):
@@ -48,7 +48,7 @@ class LCD1602:
             self.display()
 
     def set_cursor(self, row, col):
-        if row < 2 and col < 16:
+        if row < 2 and col < 20:
             self.cursor_position = (row, col)
 
     def cursor_on(self):

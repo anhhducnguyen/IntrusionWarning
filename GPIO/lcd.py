@@ -10,17 +10,7 @@ def display_lcd(text_line1, text_line2):
     lcd.set_cursor(1,4)
     lcd.write_string(text_line2)
     
-    time.sleep(2)  # Giữ màn hình hiển thị trong 2 giây
-    lcd.clear()    # Sau 2 giây, xóa màn hình
+    # time.sleep(2)  # Giữ màn hình hiển thị trong 2 giây
+    # lcd.clear()    # Sau 2 giây, xóa màn hình
 
-display_lcd("abc", "abc")
-
-
-
-
-
-# H0: 0   1   2   3   4   5   6 ......  15
-
-    # abc
-
-# H1: 0   1   2   3   4   5   6 ......  15
+# display_lcd("abc", "abc")

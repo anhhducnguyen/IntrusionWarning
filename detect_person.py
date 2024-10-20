@@ -7,6 +7,8 @@ from datetime import datetime
 from GPIO.EmulatorGUI import GPIO
 import winsound  # Phát âm thanh trên Windows, sử dụng thư viện khác cho Linux/MacOS
 from GPIO.pnhLCD1602 import LCD1602
+from gpio_control import display_lcd
+from log_csv import log_person_data
 
 # Khởi tạo GPIO
 GPIO.setmode(GPIO.BCM)
@@ -52,7 +54,7 @@ def alert_person_detected(duration=2000):  # Điều chỉnh duration phát âm 
             winsound.Beep(1000, duration)  # Phát âm thanh tần số 1000 Hz trong thời gian duration (ms)
             time.sleep(0.5)
             GPIO.output(GPIONames[0], GPIO.LOW)  # Tắt đèn LED
-    
+
     # Khởi chạy tác vụ trong một luồng mới để không chặn vòng lặp chính
     threading.Thread(target=alert).start()
 
@@ -88,9 +90,8 @@ class LEDController(threading.Thread):
 
 # Hàm cập nhật số lượng người trên màn hình LCD
 def update_lcd_count(count):
-    lcd.clear()  # Xóa màn hình LCD
-    lcd.set_cursor(0, 0)  # Đặt con trỏ ở dòng 0, cột 0
-    lcd.print("So nguoi: " + str(count))  # In số lượng người lên LCD
+    display_lcd("So nguoi: "+ str(count), "WRANING")
+    
 
 # Hàm kiểm tra kích thước hộp bao (bounding box)
 def is_person_box_valid(x1, y1, x2, y2):
@@ -152,11 +153,14 @@ while True:
 
                     # Nếu đối tượng đạt yêu cầu, vẽ hình chữ nhật và tăng biến đếm
                     person_count_in_frame += 1
-                    cv2.rectangle(frame_resized, (x1, y1), (x2, y2), (0, 255, 0), 2)  # Vẽ khung bao quanh người
-
+                    cv2.rectangle(frame_resized, (x1, y1), (x2, y2), (0, 255, 0), 2)
+    
     # Nếu phát hiện người, gọi hàm thông báo
     if person_count_in_frame > 0:
         alert_person_detected()
+
+    # Ghi số lượng người vào file CSV
+    log_person_data(person_count_in_frame)  # Ghi số lượng người vào CSV
 
     # Cập nhật số người hiện tại trên LCD và GUI
     update_lcd_count(person_count_in_frame)  # Cập nhật số lượng người trên LCD
@@ -173,3 +177,6 @@ while True:
 cap.release()
 cv2.destroyAllWindows()
 GPIO.cleanup()
+
+
+

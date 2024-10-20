@@ -1,7 +1,7 @@
 import cv2
 
 # Địa chỉ IP của camera
-ip_address = "192.168.1.4"    # Thay bằng địa chỉ IP của camera
+ip_address = "192.168.1.3"    # Thay bằng địa chỉ IP của camera
 port = "8080"                  # Thay bằng port nếu cần (có thể là 8080 hoặc 554)
 video_path = "/video"          # Thay đổi nếu cần thiết
 
