@@ -4,9 +4,9 @@ import threading
 import tkinter as tk
 import time
 from datetime import datetime
-from EmulatorGUI import GPIO
+from GPIO.EmulatorGUI import GPIO
 import winsound  # Phát âm thanh trên Windows, sử dụng thư viện khác cho Linux/MacOS
-from pnhLCD1602 import LCD1602
+from GPIO.pnhLCD1602 import LCD1602
 
 # Khởi tạo GPIO
 GPIO.setmode(GPIO.BCM)
@@ -24,7 +24,14 @@ lcd = LCD1602()  # Bỏ phương thức init()
 # Tạo đối tượng YOLO
 model = YOLO("yolov8n.pt")  # Chọn phiên bản YOLO thích hợp
 
-cap = cv2.VideoCapture(0)
+# cap = cv2.VideoCapture(0)
+# Địa chỉ IP của camera
+ip_address = "192.168.1.6"    # Thay bằng địa chỉ IP của camera
+port = "8080"                  # Thay bằng port nếu cần (có thể là 8080 hoặc 554)
+video_path = "/video"          # Thay đổi nếu cần thiết
+ip_camera_url = f"http://{ip_address}:{port}{video_path}"
+
+cap = cv2.VideoCapture(ip_camera_url)
 
 # Kiểm tra nếu camera mở thành công
 if not cap.isOpened():
