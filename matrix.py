@@ -1,5 +1,5 @@
 import tkinter as tk
-from EmulatorGUI import GPIO  # Import GPIO giả lập
+from GPIO.EmulatorGUI import GPIO  # Import GPIO giả lập
 import time
 from GPIO.pnhLCD1602 import LCD1602  # Sử dụng LCD đã có sẵn
 
