@@ -8,8 +8,8 @@ from GPIO.EmulatorGUI import GPIO
 import winsound  # Phát âm thanh trên Windows, sử dụng thư viện khác cho Linux/MacOS
 from GPIO.lcd import display_lcd
 from GPIO.pnhLCD1602 import LCD1602
-from log_csv import log_person_data  # Import hàm ghi dữ liệu vào CSV
-
+from email_service import send_email
+from csv_logger import create_csv_file_if_not_exists, log_person_data  # Import các hàm CSV
 # Khởi tạo GPIO
 GPIO.setmode(GPIO.BCM)
 
@@ -31,14 +31,24 @@ if not cap.isOpened():
     print("Không thể truy cập camera.")
     exit()
 
+
 # Tạo VideoWriter để lưu video với timestamp
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 output_video_path = os.path.join("videos", f'output_{timestamp}.avi')
 fourcc = cv2.VideoWriter_fourcc(*'XVID')
 out = cv2.VideoWriter(output_video_path, fourcc, 20.0, (640, 480))
 
+# Biến để theo dõi trạng thái gửi email
+email_sent = False
+
+# Hàm gửi email cảnh báo khi phát hiện người xuất hiện liên tục trong 5 giây
+def alert_person_exceeded_time():
+    subject = "Cảnh báo: Người xuất hiện quá 5 giây"
+    message = "Hệ thống đã phát hiện có người xuất hiện trong phạm vi camera quá 5 giây. Vui lòng kiểm tra ngay!"
+    send_email(subject, message)
+
 # Hàm điều khiển LED và phát âm thanh, đưa vào luồng riêng
-def alert_person_detected():
+def alert_led_and_sound():
     def alert():
         # Kiểm tra thời gian hiện tại
         current_time = datetime.now().time()
@@ -71,6 +81,14 @@ def is_person_box_valid(x1, y1, x2, y2):
 
 # Lưu trữ vị trí đối tượng qua các khung hình để kiểm tra chuyển động
 previous_positions = {}
+person_start_time = None  # Biến lưu thời gian bắt đầu phát hiện người
+person_detected_duration = 0  # Biến lưu thời gian đối tượng xuất hiện liên tục
+
+# Gọi hàm tạo file CSV nếu chưa tồn tại
+create_csv_file_if_not_exists()
+
+# Biến để lưu trữ thời gian ghi vào file CSV
+last_log_time = time.time()
 
 # Biến lưu thời gian ghi video cuối cùng
 last_record_time = 0
@@ -117,15 +135,36 @@ while True:
                     person_count_in_frame += 1
                     cv2.rectangle(frame_resized, (x1, y1), (x2, y2), (0, 255, 0), 2)  # Vẽ hình chữ nhật xung quanh người
 
-    # Nếu phát hiện người, gọi hàm thông báo và lưu video
+
+
+    # Nếu phát hiện người, gọi hàm thông báo và tính thời gian đối tượng xuất hiện
     current_time = time.time()
     if person_count_in_frame > 0 and current_time - last_record_time >= 1:
-        alert_person_detected()  # Kích hoạt cảnh báo
-        out.write(frame_resized)  # Ghi khung hình vào video
-        last_record_time = current_time  # Cập nhật thời gian ghi cuối cùng
+        if person_start_time is None:
+            person_start_time = time.time()  # Lưu thời gian bắt đầu phát hiện người
+            # alert_person_detected()  # Kích hoạt cảnh báo
+            out.write(frame_resized)  # Ghi khung hình vào video
+            last_record_time = current_time  # Cập nhật thời gian ghi cuối cùng
+        else:
+            person_detected_duration = time.time() - person_start_time
+            
+            # Gửi email nếu đối tượng xuất hiện liên tục quá 5 giây
+            if person_detected_duration > 1 and not email_sent: 
+                alert_person_exceeded_time()  # Gửi email
+                email_sent = True  # Đánh dấu đã gửi email
 
-    # Ghi số lượng người vào file CSV
-    log_person_data(person_count_in_frame)  # Ghi số lượng người vào CSV
+
+        alert_led_and_sound()  # Bật LED và âm thanh cảnh báo
+
+    else:
+        person_start_time = None  # Reset thời gian nếu không phát hiện người
+        email_sent = False  # Reset trạng thái gửi email nếu không có người
+
+    # Ghi số lượng người vào file CSV mỗi giây
+    current_time = time.time()
+    if current_time - last_log_time >= 1:  # Ghi mỗi giây
+        log_person_data(person_count_in_frame)  # Ghi số lượng người vào CSV
+        last_log_time = current_time  # Cập nhật thời gian ghi
 
     # Cập nhật số người hiện tại trên LCD
     update_lcd_count_and_alert(person_count_in_frame)  # Cập nhật số lượng người và cảnh báo trên LCD
