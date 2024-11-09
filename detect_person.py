@@ -6,6 +6,7 @@ import time
 from datetime import datetime
 from GPIO.EmulatorGUI import GPIO
 import winsound  # Phát âm thanh trên Windows, sử dụng thư viện khác cho Linux/MacOS
+from GPIO.lcd import display_lcd
 from GPIO.pnhLCD1602 import LCD1602
 from log_csv import log_person_data  # Import hàm ghi dữ liệu vào CSV
 
@@ -18,9 +19,6 @@ GPIONames = [14, 15, 18, 23, 24, 25, 8, 7]  # Thay đổi theo chân bạn đang
 # Thiết lập chân GPIO
 for pin in GPIONames:
     GPIO.setup(pin, GPIO.OUT)
-
-# Khởi tạo LCD
-lcd = LCD1602()
 
 # Tạo đối tượng YOLO
 model = YOLO("yolov8n.pt")  # Chọn phiên bản YOLO thích hợp
@@ -60,17 +58,9 @@ def alert_person_detected():
 # Hàm cập nhật số lượng người và cảnh báo trên màn hình LCD
 def update_lcd_count_and_alert(count):
     if count > 0:
-        display_lcd(f"So nguoi: {count}", "Canh bao: Co nguoi!")
+        display_lcd("WARNING", f"NUMBER: {count}")
     else:
-        display_lcd("So nguoi: 0", "Khong co nguoi")
-
-# Hàm hiển thị thông tin trên LCD
-def display_lcd(text_line1, text_line2):
-    lcd.clear()  # Xóa màn hình trước
-    lcd.set_cursor(0, 0)  # Vị trí dòng 1
-    lcd.write_string(text_line1)  # In dòng 1
-    lcd.set_cursor(1, 0)  # Vị trí dòng 2
-    lcd.write_string(text_line2)  # In dòng 2
+        display_lcd("SAFE", "NUMBER: 0")
 
 # Hàm kiểm tra kích thước hộp bao (bounding box)
 def is_person_box_valid(x1, y1, x2, y2):
