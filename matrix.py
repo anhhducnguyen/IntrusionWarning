@@ -57,23 +57,18 @@ class KeypadApp:
         self.mode = "normal"  # Chế độ mặc định là "normal"
 
     def key_pressed(self, key):
-        # Xử lý khi phím được nhấn
-        current_text = self.display.get()
-
-        # Chế độ bình thường để nhập mật khẩu
+        """Xử lý khi phím được nhấn"""
+        # Chế độ bình thường (Nhập mật khẩu để mở khóa)
         if self.mode == "normal":
             if key == 'C':
-                self.mode = "change"  # Chuyển sang chế độ sửa mật khẩu
+                # Chuyển sang chế độ yêu cầu nhập mật khẩu cũ
+                self.mode = "confirm_old_password"
                 self.display.delete(0, tk.END)
-                self.display.insert(0, "Current Password")  # Yêu cầu nhập mã cũ
-                print("Chế độ sửa mật khẩu")
+                self.display.insert(0, "Enter Current Password")  # Nhập mật khẩu cũ
+                print("Chế độ xác nhận mật khẩu cũ")
             elif key == 'D':
-                # Khi nhấn phím D, sẽ xóa tất cả các ký tự trước đó và về chế độ bình thường
-                self.display.delete(0, tk.END)  # Xóa màn hình
-                self.key_sequence = []  # Xóa chuỗi ký tự nhập
-                self.display.insert(0, "Normal Mode")  # Hiển thị chế độ bình thường
-                self.mode = "normal"  # Đặt lại chế độ là bình thường
-                print("Trở về chế độ bình thường")
+                # Xóa tất cả ký tự nhập
+                self.clear_code()
             elif key == '#':
                 # Xóa ký tự cuối cùng
                 self.key_sequence = self.key_sequence[:-1]
@@ -85,8 +80,7 @@ class KeypadApp:
                 self.key_sequence.append(key)
                 if len(self.key_sequence) > 6:
                     self.key_sequence = self.key_sequence[-6:]
-
-                # Cập nhật trên màn hình và LCD
+                
                 self.display.delete(0, tk.END)
                 self.display.insert(0, ''.join(self.key_sequence))
                 update_lcd_count(len(self.key_sequence))  # Cập nhật số ký tự hiển thị
@@ -94,58 +88,76 @@ class KeypadApp:
                 # Kiểm tra xem có trùng với mã mở khóa không
                 if self.key_sequence == self.unlock_code:
                     GPIO.output(unlock_pin, GPIO.HIGH)  # Bật đèn LED nếu đúng mã
-                    self.display.delete(0, tk.END)  # Xóa màn hình sau khi mở khóa
+                    self.display.delete(0, tk.END)
                     self.display.insert(0, "Unlock!")
-                    print("Unlocked successfully!")
+                    print("Mở khóa thành công!")
                     time.sleep(1)
                     GPIO.output(unlock_pin, GPIO.LOW)  # Tắt đèn sau 1 giây
                 else:
                     GPIO.output(unlock_pin, GPIO.LOW)  # Tắt đèn nếu mã không đúng
 
-        # Chế độ sửa mật khẩu
-        elif self.mode == "change":
-            if len(self.key_sequence) < 6:
+        # Chế độ xác nhận mật khẩu cũ (Confirm Old Password)
+        elif self.mode == "confirm_old_password":
+            if key == 'D':
+                # Xóa tất cả ký tự nhập
+                self.clear_code()
+            elif key == '#':
+                # Xóa ký tự cuối cùng
+                self.key_sequence = self.key_sequence[:-1]
+                self.display.delete(0, tk.END)
+                self.display.insert(0, ''.join(self.key_sequence))
+                update_lcd_count(len(self.key_sequence))  # Cập nhật số ký tự hiển thị
+            elif len(self.key_sequence) < 6:
                 # Tiếp tục nhập mật khẩu cũ
                 self.key_sequence.append(key)
                 self.display.delete(0, tk.END)
                 self.display.insert(0, ''.join(self.key_sequence))
             elif len(self.key_sequence) == 6:
                 if self.key_sequence == self.unlock_code:
-                    # Yêu cầu nhập mật khẩu mới nếu mã cũ đúng
+                    # Nếu mật khẩu cũ đúng, chuyển sang chế độ nhập mật khẩu mới
                     self.display.delete(0, tk.END)
-                    self.display.insert(0, "New Password")  # Hiển thị yêu cầu nhập mật khẩu mới
-                    print("New Password")
+                    self.display.insert(0, "Enter New Password")  # Nhập mật khẩu mới
                     self.mode = "set_new_code"  # Chuyển sang chế độ nhập mật khẩu mới
-                    self.key_sequence = []  # Xóa dãy ký tự nhập
+                    self.key_sequence = []  # Xóa chuỗi ký tự nhập
+                    print("Chuyển sang chế độ nhập mật khẩu mới")
                 else:
-                    # Mã cũ sai
+                    # Nếu mật khẩu cũ sai
                     self.display.delete(0, tk.END)
                     self.display.insert(0, "Wrong Password")
                     time.sleep(1)
                     self.display.delete(0, tk.END)
                     self.display.insert(0, "Normal Mode")
-                    self.mode = "normal"  # Trở lại chế độ bình thường
+                    self.mode = "normal"  # Quay lại chế độ bình thường
 
-        # Chế độ nhập mật khẩu mới
+        # Chế độ nhập mật khẩu mới (Set New Password)
         elif self.mode == "set_new_code":
-            if len(self.key_sequence) < 6:
+            if key == 'D':
+                # Xóa tất cả ký tự nhập
+                self.clear_code()
+            elif key == '#':
+                # Xóa ký tự cuối cùng
+                self.key_sequence = self.key_sequence[:-1]
+                self.display.delete(0, tk.END)
+                self.display.insert(0, ''.join(self.key_sequence))
+                update_lcd_count(len(self.key_sequence))  # Cập nhật số ký tự hiển thị
+            elif len(self.key_sequence) < 6:
                 # Tiếp tục nhập mật khẩu mới
                 self.key_sequence.append(key)
                 self.display.delete(0, tk.END)
                 self.display.insert(0, ''.join(self.key_sequence))
             elif len(self.key_sequence) == 6:
-                self.unlock_code = self.key_sequence  # Cập nhật mã mở khóa
+                # Đã nhập đủ 6 ký tự mới
+                self.unlock_code = self.key_sequence  # Cập nhật mã mở khóa với mã mới
                 self.key_sequence = []
                 self.display.delete(0, tk.END)
-                self.display.insert(0, "Changed Password")  # Hiển thị thông báo mật khẩu mới đã được thay đổi
+                self.display.insert(0, "Changed Password")  # Hiển thị thông báo mật khẩu đã thay đổi
                 print("Mã mở khóa đã được thay đổi!")
 
-                # Bật đèn LED và phát âm thanh
+                # Phản hồi thành công
                 self.success_feedback()
 
                 time.sleep(1)
                 self.mode = "normal"  # Trở về chế độ bình thường
-
 
     def clear_code(self):
         """Chức năng xóa chuỗi nhập hiện tại"""
@@ -154,12 +166,12 @@ class KeypadApp:
         print("Đã xóa chuỗi nhập!")
 
     def success_feedback(self):
-        """Bật đèn LED và phát âm thanh khi thêm hoặc sửa mật khẩu thành công"""
+        """Phản hồi thành công: Bật đèn LED và phát âm thanh khi thay đổi mật khẩu thành công"""
         GPIO.output(led_pin, GPIO.HIGH)  # Bật đèn LED
         GPIO.output(buzzer_pin, GPIO.HIGH)  # Phát âm thanh
         time.sleep(0.5)  # Đợi 0.5 giây
-        GPIO.output(led_pin, GPIO.LOW)
-        GPIO.output(buzzer_pin, GPIO.LOW)  # Tắt âm thanh sau 0.5 giây
+        GPIO.output(led_pin, GPIO.LOW)  # Tắt đèn LED
+        GPIO.output(buzzer_pin, GPIO.LOW)  # Tắt âm thanh
 
 # Hàm cập nhật số lượng ký tự nhập trên màn hình LCD
 def update_lcd_count(count):
