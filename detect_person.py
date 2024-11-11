@@ -6,7 +6,7 @@ import time
 from datetime import datetime
 from EmulatorGUI import GPIO
 import winsound  # Phát âm thanh trên Windows, sử dụng thư viện khác cho Linux/MacOS
-from pnhLCD1602 import LCD1602
+from GPIO.pnhLCD1602 import LCD1602
 
 # Khởi tạo GPIO
 GPIO.setmode(GPIO.BCM)
@@ -24,6 +24,13 @@ lcd = LCD1602()  # Bỏ phương thức init()
 # Tạo đối tượng YOLO
 model = YOLO("yolov8n.pt")  # Chọn phiên bản YOLO thích hợp
 
+# cap = cv2.VideoCapture(0)
+# Địa chỉ IP của camera
+ip_address = "192.168.1.6"    # Thay bằng địa chỉ IP của camera
+port = "8080"                  # Thay bằng port nếu cần (có thể là 8080 hoặc 554)
+video_path = "/video"          # Thay đổi nếu cần thiết
+ip_camera_url = f"http://{ip_address}:{port}{video_path}"
+
 cap = cv2.VideoCapture(0)
 
 # Kiểm tra nếu camera mở thành công
@@ -32,17 +39,17 @@ if not cap.isOpened():
     exit()
 
 # Hàm điều khiển LED và phát âm thanh, đưa vào luồng riêng
-def alert_person_detected():
+def alert_person_detected(duration=2000):  # Điều chỉnh duration phát âm thanh dài hơn
     def alert():
         # Kiểm tra thời gian hiện tại
         current_time = datetime.now().time()
         start_time = datetime.strptime("10:00:00", "%H:%M:%S").time()
         end_time = datetime.strptime("16:00:00", "%H:%M:%S").time()
 
-        # Chỉ bật LED và phát âm thanh nếu trong khoảng từ 10 giờ đến 15 giờ
+        # Chỉ bật LED và phát âm thanh nếu trong khoảng từ 10 giờ đến 16 giờ
         if start_time <= current_time <= end_time:
             GPIO.output(GPIONames[0], GPIO.HIGH)  # Bật đèn LED ở chân GPIO 14
-            winsound.Beep(1000, 500)  # Phát âm thanh tần số 1000 Hz trong 500 ms (Chỉ trên Windows)
+            winsound.Beep(1000, duration)  # Phát âm thanh tần số 1000 Hz trong thời gian duration (ms)
             time.sleep(0.5)
             GPIO.output(GPIONames[0], GPIO.LOW)  # Tắt đèn LED
     
@@ -97,6 +104,7 @@ app = LEDController()
 
 # Lưu trữ vị trí đối tượng qua các khung hình để kiểm tra chuyển động
 previous_positions = {}
+motionless_time = {}
 
 while True:
     # Đọc từng khung hình từ camera
@@ -130,16 +138,22 @@ while True:
                     if person_id in previous_positions:
                         prev_x, prev_y = previous_positions[person_id]
                         movement = abs(center_x - prev_x) + abs(center_y - prev_y)
-                        if movement < 20:  # Nếu đối tượng không di chuyển nhiều, bỏ qua
-                            continue
-                    
+                        if movement < 20:  # Nếu đối tượng không di chuyển nhiều
+                            if person_id not in motionless_time:
+                                motionless_time[person_id] = time.time()
+                            elif time.time() - motionless_time[person_id] > 15:  # Chờ 30 giây trước khi cảnh báo
+                                # Phát âm thanh cảnh báo khi người đứng im quá 30 giây
+                                alert_person_detected(duration=3000)  # Phát âm thanh cảnh báo lâu hơn
+                        else:
+                            motionless_time.pop(person_id, None)  # Xóa thời gian nếu di chuyển
+
                     # Cập nhật vị trí hiện tại
                     previous_positions[person_id] = (center_x, center_y)
 
                     # Nếu đối tượng đạt yêu cầu, vẽ hình chữ nhật và tăng biến đếm
                     person_count_in_frame += 1
-                    cv2.rectangle(frame_resized, (x1, y1), (x2, y2), (0, 255, 0), 2)
-    
+                    cv2.rectangle(frame_resized, (x1, y1), (x2, y2), (0, 255, 0), 2)  # Vẽ khung bao quanh người
+
     # Nếu phát hiện người, gọi hàm thông báo
     if person_count_in_frame > 0:
         alert_person_detected()
