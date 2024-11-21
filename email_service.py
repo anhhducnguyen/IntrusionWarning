@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 # Load các biến từ file .env
 load_dotenv()
 
-def send_email(subject, message):
+def send_email(subject, message, attachment_path=None):
     # Lấy thông tin cấu hình email từ .env
     email_host = os.getenv('EMAIL_HOST')
     email_port = int(os.getenv('EMAIL_PORT'))
@@ -24,6 +24,16 @@ def send_email(subject, message):
     # Thêm nội dung email
     msg.attach(MIMEText(message, 'plain'))
 
+    # Thêm tệp đính kèm nếu có
+    if attachment_path:
+        with open(attachment_path, 'rb') as attachment:
+            part = MIMEText(attachment.read(), 'base64', 'utf-8')
+            part.add_header(
+                'Content-Disposition',
+                f'attachment; filename="{os.path.basename(attachment_path)}"'
+            )
+            msg.attach(part)
+
     # Gửi email
     try:
         server = smtplib.SMTP(email_host, email_port)
@@ -34,5 +44,6 @@ def send_email(subject, message):
         print(f"Email đã được gửi tới {email_receiver}")
     except Exception as e:
         print(f"Không thể gửi email. Lỗi: {str(e)}")
+
 
 

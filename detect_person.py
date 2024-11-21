@@ -1,5 +1,6 @@
 import os
 import cv2
+import os
 from ultralytics import YOLO
 import threading
 import time
@@ -10,6 +11,13 @@ from GPIO.lcd import display_lcd
 from GPIO.pnhLCD1602 import LCD1602
 from email_service import send_email
 from csv_logger import create_csv_file_if_not_exists, log_person_data  # Import các hàm CSV
+
+
+# Tạo thư mục lưu ảnh nếu chưa tồn tại
+if not os.path.exists("detected_images"):
+    os.makedirs("detected_images")
+
+
 # Khởi tạo GPIO
 GPIO.setmode(GPIO.BCM)
 
@@ -41,11 +49,26 @@ out = cv2.VideoWriter(output_video_path, fourcc, 20.0, (640, 480))
 # Biến để theo dõi trạng thái gửi email
 email_sent = False
 
+
+
+
 # Hàm gửi email cảnh báo khi phát hiện người xuất hiện liên tục trong 5 giây
-def alert_person_exceeded_time():
+def alert_person_exceeded_time(image):
     subject = "Cảnh báo: Người xuất hiện quá 5 giây"
     message = "Hệ thống đã phát hiện có người xuất hiện trong phạm vi camera quá 5 giây. Vui lòng kiểm tra ngay!"
-    send_email(subject, message)
+
+    # Lưu ảnh vào thư mục
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    image_path = f"detected_images/person_detected_{timestamp}.jpg"
+    cv2.imwrite(image_path, image)  # Lưu ảnh
+
+    # Gửi email kèm ảnh
+    send_email(subject, message, image_path)
+
+
+
+
+
 
 # Hàm điều khiển LED và phát âm thanh, đưa vào luồng riêng
 def alert_led_and_sound():
@@ -150,8 +173,18 @@ while True:
             
             # Gửi email nếu đối tượng xuất hiện liên tục quá 5 giây
             if person_detected_duration > 1 and not email_sent: 
-                alert_person_exceeded_time()  # Gửi email
+                alert_person_exceeded_time(frame_resized)  # Gửi email
                 email_sent = True  # Đánh dấu đã gửi email
+
+
+
+
+
+
+
+
+
+
 
 
         alert_led_and_sound()  # Bật LED và âm thanh cảnh báo
